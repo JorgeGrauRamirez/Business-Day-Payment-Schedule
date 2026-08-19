@@ -1,5 +1,5 @@
 from datetime import date, timedelta
-from typing import Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 
 def days_in_month(year: int, month: int) -> int:
@@ -145,3 +145,52 @@ def build_schedule(
     unadjusted = generate_unadjusted(trade, maturity, months, generation)
     adjusted = [adjust(d, convention, holidays, recurring) for d in unadjusted]
     return unadjusted, adjusted
+
+
+def parse_holidays(values: List[str]) -> Set[date]:
+    return {date.fromisoformat(s) for s in values}
+
+
+def parse_recurring_holidays(values: List[str]) -> Set[Tuple[int, int]]:
+    recurring = set()
+    for s in values:
+        parts = s.split("-")
+        if len(parts) != 2:
+            raise ValueError(f"invalid recurring holiday: {s}, expected MM-DD")
+        month, day = int(parts[0]), int(parts[1])
+        if not (1 <= month <= 12) or not (1 <= day <= days_in_month(2000, month)):
+            raise ValueError(f"invalid recurring holiday: {s}")
+        recurring.add((month, day))
+    return recurring
+
+
+def parse_request(data: Dict[str, Any]) -> Dict[str, Any]:
+    try:
+        trade = date.fromisoformat(data["tradeDate"])
+        maturity = date.fromisoformat(data["maturityDate"])
+        frequency = data["frequency"]
+        convention = data["businessDayConvention"]
+    except KeyError as exc:
+        raise ValueError(f"missing required field: {exc.args[0]}") from exc
+
+    return {
+        "trade": trade,
+        "maturity": maturity,
+        "frequency": frequency,
+        "convention": convention,
+        "holidays": parse_holidays(data.get("holidays", [])),
+        "recurring": parse_recurring_holidays(data.get("recurringHolidays", [])),
+        "generation": data.get("generation", "BACKWARD"),
+    }
+
+
+def format_schedule(unadjusted: List[date], adjusted: List[date]) -> Dict[str, Any]:
+    return {
+        "unadjustedDates": [d.isoformat() for d in unadjusted],
+        "adjustedDates": [d.isoformat() for d in adjusted],
+    }
+
+
+def run_schedule(data: Dict[str, Any]) -> Dict[str, Any]:
+    unadjusted, adjusted = build_schedule(**parse_request(data))
+    return format_schedule(unadjusted, adjusted)
