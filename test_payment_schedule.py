@@ -10,6 +10,7 @@ from payment_schedule import (
     prev_business_day,
     adjust,
     parse_frequency,
+    generate_unadjusted,
 )
 
 
@@ -156,3 +157,44 @@ def test_parse_frequency_zero_raises():
 def test_parse_frequency_unsupported_unit_raises():
     with pytest.raises(ValueError):
         parse_frequency("6W")
+
+
+def test_generate_unadjusted_backward_regular_schedule():
+    result = generate_unadjusted(date(2026, 8, 19), date(2027, 8, 22), 6, "BACKWARD")
+    assert result == [date(2026, 8, 22), date(2027, 2, 22), date(2027, 8, 22)]
+
+
+def test_generate_unadjusted_trade_date_not_included():
+    trade = date(2026, 8, 19)
+    dates = generate_unadjusted(trade, date(2027, 8, 19), 6, "BACKWARD")
+    assert trade not in dates
+
+
+def test_generate_unadjusted_backward_and_forward_differ_on_stub_position():
+    trade, maturity = date(2026, 1, 15), date(2027, 3, 15)
+    back = generate_unadjusted(trade, maturity, 6, "BACKWARD")
+    fwd = generate_unadjusted(trade, maturity, 6, "FORWARD")
+    assert len(back) == len(fwd) == 3
+    assert back[0] == date(2026, 3, 15)  # long stub at the start
+    assert fwd[0] == date(2026, 7, 15)  # long stub at the end
+
+
+def test_generate_unadjusted_forward_always_ends_on_maturity():
+    result = generate_unadjusted(date(2026, 1, 15), date(2027, 3, 15), 6, "FORWARD")
+    assert result[-1] == date(2027, 3, 15)
+
+
+def test_generate_unadjusted_maturity_before_trade_raises():
+    with pytest.raises(ValueError):
+        generate_unadjusted(date(2027, 1, 15), date(2026, 1, 15), 6, "BACKWARD")
+
+
+def test_generate_unadjusted_maturity_equal_trade_raises():
+    d = date(2026, 1, 15)
+    with pytest.raises(ValueError):
+        generate_unadjusted(d, d, 6, "BACKWARD")
+
+
+def test_generate_unadjusted_unknown_generation_raises():
+    with pytest.raises(ValueError):
+        generate_unadjusted(date(2026, 1, 15), date(2027, 1, 15), 6, "SIDEWAYS")
