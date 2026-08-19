@@ -52,3 +52,21 @@ def prev_business_day(
     while not is_business_day(d, holidays, recurring):
         d = d - timedelta(days=1)
     return d
+
+
+def adjust(
+    d: date,
+    convention: str,
+    holidays: Optional[Set[date]] = None,
+    recurring: Optional[Set[Tuple[int, int]]] = None,
+) -> date:
+    if convention == "FOLLOWING":
+        return next_business_day(d, holidays, recurring)
+    if convention == "PRECEDING":
+        return prev_business_day(d, holidays, recurring)
+    if convention == "MODIFIED_FOLLOWING":
+        candidate = next_business_day(d, holidays, recurring)
+        if candidate.month != d.month:
+            return prev_business_day(d, holidays, recurring)
+        return candidate
+    raise ValueError("unknown convention: " + convention)
