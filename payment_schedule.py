@@ -70,3 +70,24 @@ def adjust(
             return prev_business_day(d, holidays, recurring)
         return candidate
     raise ValueError("unknown convention: " + convention)
+
+
+def parse_frequency(text: str) -> int:
+    text = text.strip().upper()
+    if not text:
+        raise ValueError("frequency must not be empty")
+
+    number, unit = text[:-1], text[-1]
+
+    if not number.isdigit():
+        raise ValueError(f"invalid frequency: {text}")
+
+    number = int(number)
+    if number <= 0:
+        raise ValueError(f"frequency must be positive: {text}")
+
+    if unit == "M":
+        return number
+    if unit == "Y":
+        return number * 12
+    raise ValueError(f"unsupported frequency unit: {unit}")
