@@ -1,11 +1,14 @@
 from datetime import date
 
+import pytest
+
 from payment_schedule import (
     days_in_month,
     add_months,
     is_business_day,
     next_business_day,
     prev_business_day,
+    adjust,
 )
 
 
@@ -86,3 +89,35 @@ def test_next_business_day_skips_weekend_and_holiday():
 
 def test_prev_business_day_skips_weekend():
     assert prev_business_day(date(2026, 8, 22)) == date(2026, 8, 21)
+
+
+def test_adjust_following_skips_holiday():
+    d = date(2026, 8, 19)
+    holidays = {date(2026, 8, 19)}
+    assert adjust(d, "FOLLOWING", holidays) == date(2026, 8, 20)
+
+
+def test_adjust_preceding_skips_weekend():
+    assert adjust(date(2026, 8, 22), "PRECEDING") == date(2026, 8, 21)
+
+
+def test_adjust_modified_following_stays_in_month():
+    # Saturday 2026-08-15 -> next business day is Monday 2026-08-17, same month.
+    assert adjust(date(2026, 8, 15), "MODIFIED_FOLLOWING") == date(2026, 8, 17)
+
+
+def test_adjust_modified_following_rolls_back_at_month_end():
+    # Saturday 2026-05-30 -> following would land in June, so it rolls backward instead.
+    assert adjust(date(2026, 5, 30), "MODIFIED_FOLLOWING") == date(2026, 5, 29)
+
+
+def test_adjust_modified_following_with_holiday_and_recurring():
+    d = date(2026, 8, 22)
+    holidays = {date(2026, 8, 24)}
+    recurring = {(8, 25)}
+    assert adjust(d, "MODIFIED_FOLLOWING", holidays, recurring) == date(2026, 8, 26)
+
+
+def test_adjust_unknown_convention_raises():
+    with pytest.raises(ValueError):
+        adjust(date(2026, 8, 19), "MODIFIED FOLLOWING")
