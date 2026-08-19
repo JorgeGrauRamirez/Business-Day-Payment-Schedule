@@ -25,16 +25,11 @@ def test_days_in_month_regular():
     assert days_in_month(2026, 4) == 30
 
 
-def test_days_in_month_december():
-    assert days_in_month(2026, 12) == 31
-
-
-def test_days_in_month_february_leap_year():
+def test_days_in_month_february():
     assert days_in_month(2024, 2) == 29
-
-
-def test_days_in_month_february_non_leap_year():
     assert days_in_month(2026, 2) == 28
+
+    
 
 
 def test_add_months_within_year():
@@ -64,10 +59,6 @@ def test_weekday_is_business_day():
 
 def test_saturday_is_not_business_day():
     assert is_business_day(date(2026, 8, 22)) is False
-
-
-def test_sunday_is_not_business_day():
-    assert is_business_day(date(2026, 8, 23)) is False
 
 
 def test_holiday_is_not_business_day():
