@@ -12,6 +12,11 @@ from payment_schedule import (
     parse_frequency,
     generate_unadjusted,
     build_schedule,
+    parse_holidays,
+    parse_recurring_holidays,
+    parse_request,
+    format_schedule,
+    run_schedule,
 )
 
 
@@ -232,3 +237,96 @@ def test_build_schedule_combines_multiple_holiday_calendars():
     )
     assert date(2026, 6, 5) not in adjusted
     assert date(2026, 7, 3) not in adjusted
+
+
+def test_parse_holidays_converts_iso_strings_to_dates():
+    result = parse_holidays(["2026-01-01", "2026-12-25"])
+    assert result == {date(2026, 1, 1), date(2026, 12, 25)}
+
+
+def test_parse_holidays_empty_list():
+    assert parse_holidays([]) == set()
+
+
+def test_parse_recurring_holidays_converts_mm_dd_to_tuples():
+    result = parse_recurring_holidays(["01-01", "12-25"])
+    assert result == {(1, 1), (12, 25)}
+
+
+def test_parse_recurring_holidays_rejects_bad_format():
+    with pytest.raises(ValueError):
+        parse_recurring_holidays(["2026-01-01"])  # full date, not MM-DD
+
+
+def test_parse_recurring_holidays_rejects_invalid_calendar_date():
+    with pytest.raises(ValueError):
+        parse_recurring_holidays(["02-30"])  # Feb 30 doesn't exist
+
+
+def test_parse_recurring_holidays_rejects_invalid_month():
+    with pytest.raises(ValueError):
+        parse_recurring_holidays(["13-01"])
+
+
+def test_parse_request_full_payload():
+    data = {
+        "tradeDate": "2026-01-15",
+        "maturityDate": "2027-01-15",
+        "frequency": "6M",
+        "businessDayConvention": "MODIFIED_FOLLOWING",
+        "holidays": ["2026-01-01"],
+        "recurringHolidays": ["12-25"],
+    }
+    parsed = parse_request(data)
+    assert parsed["trade"] == date(2026, 1, 15)
+    assert parsed["maturity"] == date(2027, 1, 15)
+    assert parsed["frequency"] == "6M"
+    assert parsed["convention"] == "MODIFIED_FOLLOWING"
+    assert parsed["holidays"] == {date(2026, 1, 1)}
+    assert parsed["recurring"] == {(12, 25)}
+    assert parsed["generation"] == "BACKWARD"
+
+
+def test_parse_request_defaults_optional_fields():
+    data = {
+        "tradeDate": "2026-01-15",
+        "maturityDate": "2027-01-15",
+        "frequency": "6M",
+        "businessDayConvention": "FOLLOWING",
+    }
+    parsed = parse_request(data)
+    assert parsed["holidays"] == set()
+    assert parsed["recurring"] == set()
+    assert parsed["generation"] == "BACKWARD"
+
+
+def test_parse_request_missing_required_field_raises():
+    data = {
+        "tradeDate": "2026-01-15",
+        "maturityDate": "2027-01-15",
+        "frequency": "6M",
+        # businessDayConvention missing
+    }
+    with pytest.raises(ValueError):
+        parse_request(data)
+
+
+def test_format_schedule_converts_dates_to_iso_strings():
+    result = format_schedule([date(2026, 2, 15)], [date(2026, 2, 16)])
+    assert result == {
+        "unadjustedDates": ["2026-02-15"],
+        "adjustedDates": ["2026-02-16"],
+    }
+
+
+def test_run_schedule_end_to_end():
+    data = {
+        "tradeDate": "2026-01-15",
+        "maturityDate": "2027-01-15",
+        "frequency": "6M",
+        "businessDayConvention": "FOLLOWING",
+        "holidays": ["2027-01-15"],
+    }
+    result = run_schedule(data)
+    assert result["unadjustedDates"][-1] == "2027-01-15"
+    assert result["adjustedDates"][-1] == "2027-01-18"
