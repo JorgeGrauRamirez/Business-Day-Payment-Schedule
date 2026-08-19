@@ -9,6 +9,7 @@ from payment_schedule import (
     next_business_day,
     prev_business_day,
     adjust,
+    parse_frequency,
 )
 
 
@@ -121,3 +122,37 @@ def test_adjust_modified_following_with_holiday_and_recurring():
 def test_adjust_unknown_convention_raises():
     with pytest.raises(ValueError):
         adjust(date(2026, 8, 19), "MODIFIED FOLLOWING")
+
+
+def test_parse_frequency_months():
+    assert parse_frequency("1M") == 1
+    assert parse_frequency("6M") == 6
+
+
+def test_parse_frequency_years_converted_to_months():
+    assert parse_frequency("1Y") == 12
+    assert parse_frequency("2Y") == 24
+
+
+def test_parse_frequency_lowercase_and_whitespace():
+    assert parse_frequency(" 6m ") == 6
+
+
+def test_parse_frequency_empty_raises():
+    with pytest.raises(ValueError):
+        parse_frequency("")
+
+
+def test_parse_frequency_non_numeric_raises():
+    with pytest.raises(ValueError):
+        parse_frequency("M")
+
+
+def test_parse_frequency_zero_raises():
+    with pytest.raises(ValueError):
+        parse_frequency("0M")
+
+
+def test_parse_frequency_unsupported_unit_raises():
+    with pytest.raises(ValueError):
+        parse_frequency("6W")
