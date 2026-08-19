@@ -91,3 +91,42 @@ def parse_frequency(text: str) -> int:
     if unit == "Y":
         return number * 12
     raise ValueError(f"unsupported frequency unit: {unit}")
+
+
+def generate_unadjusted(
+    trade: date, maturity: date, months: int, generation: str = "BACKWARD"
+) -> list:
+    if maturity <= trade:
+        raise ValueError("maturity must be after trade date")
+
+    if generation == "BACKWARD":
+        return _generate_backward(trade, maturity, months)
+    if generation == "FORWARD":
+        return _generate_forward(trade, maturity, months)
+    raise ValueError(f"unknown generation rule: {generation}")
+
+
+def _generate_backward(trade: date, maturity: date, months: int) -> list:
+    dates = []
+    n = 0
+    while True:
+        d = add_months(maturity, -months * n)
+        if d <= trade:
+            break
+        dates.append(d)
+        n += 1
+    dates.reverse()  # order from trade to maturity
+    return dates
+
+
+def _generate_forward(trade: date, maturity: date, months: int) -> list:
+    dates = []
+    n = 1
+    while True:
+        d = add_months(trade, months * n)
+        if d >= maturity:
+            break
+        dates.append(d)
+        n += 1
+    dates.append(maturity)
+    return dates
