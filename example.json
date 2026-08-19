@@ -1,0 +1,9 @@
+{
+    "tradeDate": "2026-01-15",
+    "maturityDate": "2027-01-15",
+    "frequency": "6M",
+    "businessDayConvention": "MODIFIED_FOLLOWING",
+    "holidays": ["2026-01-01", "2026-12-25"],
+    "recurringHolidays":["01-01", "12-25"],
+    "generation":"BACKWARD"
+}
