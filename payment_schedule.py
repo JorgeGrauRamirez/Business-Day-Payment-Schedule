@@ -1,5 +1,5 @@
 from datetime import date, timedelta
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 
 def days_in_month(year: int, month: int) -> int:
@@ -18,8 +18,8 @@ def add_months(d: date, n: int) -> date:
 
 def is_business_day(
     d: date,
-    holidays: Optional[Set[date]] = None,
-    recurring: Optional[Set[Tuple[int, int]]] = None,
+    holidays: set[date] | None = None,
+    recurring: set[tuple[int, int]] | None = None,
 ) -> bool:
     if holidays is None:
         holidays = set()
@@ -36,8 +36,8 @@ def is_business_day(
 
 def next_business_day(
     d: date,
-    holidays: Optional[Set[date]] = None,
-    recurring: Optional[Set[Tuple[int, int]]] = None,
+    holidays: set[date] | None = None,
+    recurring: set[tuple[int, int]] | None = None,
 ) -> date:
     while not is_business_day(d, holidays, recurring):
         d = d + timedelta(days=1)
@@ -46,8 +46,8 @@ def next_business_day(
 
 def prev_business_day(
     d: date,
-    holidays: Optional[Set[date]] = None,
-    recurring: Optional[Set[Tuple[int, int]]] = None,
+    holidays: set[date] | None = None,
+    recurring: set[tuple[int, int]] | None = None,
 ) -> date:
     while not is_business_day(d, holidays, recurring):
         d = d - timedelta(days=1)
@@ -57,8 +57,8 @@ def prev_business_day(
 def adjust(
     d: date,
     convention: str,
-    holidays: Optional[Set[date]] = None,
-    recurring: Optional[Set[Tuple[int, int]]] = None,
+    holidays: set[date] | None = None,
+    recurring: set[tuple[int, int]] | None = None,
 ) -> date:
     if convention == "FOLLOWING":
         return next_business_day(d, holidays, recurring)
@@ -137,21 +137,21 @@ def build_schedule(
     maturity: date,
     frequency: str,
     convention: str,
-    holidays: Optional[Set[date]] = None,
-    recurring: Optional[Set[Tuple[int, int]]] = None,
+    holidays: set[date] | None = None,
+    recurring: set[tuple[int, int]] | None = None,
     generation: str = "BACKWARD",
-) -> Tuple[list, list]:
+) -> tuple[list, list]:
     months = parse_frequency(frequency)
     unadjusted = generate_unadjusted(trade, maturity, months, generation)
     adjusted = [adjust(d, convention, holidays, recurring) for d in unadjusted]
     return unadjusted, adjusted
 
 
-def parse_holidays(values: List[str]) -> Set[date]:
+def parse_holidays(values: list[str]) -> set[date]:
     return {date.fromisoformat(s) for s in values}
 
 
-def parse_recurring_holidays(values: List[str]) -> Set[Tuple[int, int]]:
+def parse_recurring_holidays(values: list[str]) -> set[tuple[int, int]]:
     recurring = set()
     for s in values:
         parts = s.split("-")
@@ -164,7 +164,7 @@ def parse_recurring_holidays(values: List[str]) -> Set[Tuple[int, int]]:
     return recurring
 
 
-def parse_request(data: Dict[str, Any]) -> Dict[str, Any]:
+def parse_request(data: dict[str, Any]) -> dict[str, Any]:
     try:
         trade = date.fromisoformat(data["tradeDate"])
         maturity = date.fromisoformat(data["maturityDate"])
@@ -184,13 +184,13 @@ def parse_request(data: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def format_schedule(unadjusted: List[date], adjusted: List[date]) -> Dict[str, Any]:
+def format_schedule(unadjusted: list[date], adjusted: list[date]) -> dict[str, Any]:
     return {
         "unadjustedDates": [d.isoformat() for d in unadjusted],
         "adjustedDates": [d.isoformat() for d in adjusted],
     }
 
 
-def run_schedule(data: Dict[str, Any]) -> Dict[str, Any]:
+def run_schedule(data: dict[str, Any]) -> dict[str, Any]:
     unadjusted, adjusted = build_schedule(**parse_request(data))
     return format_schedule(unadjusted, adjusted)
