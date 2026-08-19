@@ -1,3 +1,5 @@
+import json
+import sys
 from datetime import date, timedelta
 from typing import Any
 
@@ -194,3 +196,24 @@ def format_schedule(unadjusted: list[date], adjusted: list[date]) -> dict[str, A
 def run_schedule(data: dict[str, Any]) -> dict[str, Any]:
     unadjusted, adjusted = build_schedule(**parse_request(data))
     return format_schedule(unadjusted, adjusted)
+
+
+def main() -> None:
+    if len(sys.argv) != 2:
+        print(f"usage: python {sys.argv[0]} <input.json>", file=sys.stderr)
+        sys.exit(1)
+
+    input_path = sys.argv[1]
+    try:
+        with open(input_path, encoding="utf-8") as f:
+            data = json.load(f)
+        result = run_schedule(data)
+    except (OSError, json.JSONDecodeError, ValueError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    print(json.dumps(result, indent=2))
+
+
+if __name__ == "__main__":
+    main()
