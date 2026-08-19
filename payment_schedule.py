@@ -130,3 +130,18 @@ def _generate_forward(trade: date, maturity: date, months: int) -> list:
         n += 1
     dates.append(maturity)
     return dates
+
+
+def build_schedule(
+    trade: date,
+    maturity: date,
+    frequency: str,
+    convention: str,
+    holidays: Optional[Set[date]] = None,
+    recurring: Optional[Set[Tuple[int, int]]] = None,
+    generation: str = "BACKWARD",
+) -> Tuple[list, list]:
+    months = parse_frequency(frequency)
+    unadjusted = generate_unadjusted(trade, maturity, months, generation)
+    adjusted = [adjust(d, convention, holidays, recurring) for d in unadjusted]
+    return unadjusted, adjusted
