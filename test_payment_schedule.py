@@ -11,6 +11,7 @@ from payment_schedule import (
     adjust,
     parse_frequency,
     generate_unadjusted,
+    build_schedule,
 )
 
 
@@ -198,3 +199,36 @@ def test_generate_unadjusted_maturity_equal_trade_raises():
 def test_generate_unadjusted_unknown_generation_raises():
     with pytest.raises(ValueError):
         generate_unadjusted(date(2026, 1, 15), date(2027, 1, 15), 6, "SIDEWAYS")
+
+
+def test_build_schedule_returns_both_lists_same_length():
+    unadjusted, adjusted = build_schedule(
+        date(2026, 1, 15), date(2027, 1, 15), "6M", "MODIFIED_FOLLOWING"
+    )
+    assert len(unadjusted) == len(adjusted) == 2
+    for u, a in zip(unadjusted, adjusted):
+        assert abs((a - u).days) <= 4
+
+
+def test_build_schedule_applies_holidays():
+    unadjusted, adjusted = build_schedule(
+        date(2026, 1, 15),
+        date(2027, 1, 15),
+        "6M",
+        "FOLLOWING",
+        holidays={date(2027, 1, 15)},
+    )
+    assert unadjusted[-1] == date(2027, 1, 15)
+    assert adjusted[-1] == date(2027, 1, 18)
+
+
+def test_build_schedule_combines_multiple_holiday_calendars():
+    calendar_dk = {date(2026, 6, 5)}
+    calendar_us = {date(2026, 7, 3)}
+    combined = calendar_dk | calendar_us
+
+    unadjusted, adjusted = build_schedule(
+        date(2026, 1, 5), date(2026, 8, 5), "1M", "FOLLOWING", holidays=combined
+    )
+    assert date(2026, 6, 5) not in adjusted
+    assert date(2026, 7, 3) not in adjusted
