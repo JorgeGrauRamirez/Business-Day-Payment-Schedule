@@ -122,18 +122,12 @@ def test_adjust_unknown_convention_raises():
         adjust(date(2026, 8, 19), "MODIFIED FOLLOWING")
 
 
-def test_parse_frequency_months():
+def test_parse_frequency():
     assert parse_frequency("1M") == 1 # monthly
     assert parse_frequency("3M") == 3 #quarterly
     assert parse_frequency("6M") == 6 # half yearly
-
-
-def test_parse_frequency_years_converted_to_months():
-    assert parse_frequency("1Y") == 12
+    assert parse_frequency("1Y") == 12 # year
     assert parse_frequency("2Y") == 24
-
-
-def test_parse_frequency_lowercase_and_whitespace():
     assert parse_frequency(" 6m ") == 6
 
 
