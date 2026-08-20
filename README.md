@@ -47,6 +47,13 @@ pytest
 Both schedules are returned: the unadjusted one is the theoretical schedule, the
 adjusted one is where payments actually settle.
 
+## Design decisions
+
+- Dates are generated backwards from maturity, so the stub falls at the start of the schedule. `generation: FORWARD` puts it at the end instead.
+- Each date is computed as `maturity - n * frequency`, not by adding to the previous date, which would drift after a month-end clamp.
+- Generation and adjustment are separate: the generator knows nothing about holidays, and the adjustment knows nothing about schedules.
+- Holidays are a set, so combining calendars is a union — a payment across two jurisdictions only settles when both markets are open.
+
 ## Files
 
 - `payment_schedule.py` — the implementation, and a CLI entry point (`python payment_schedule.py <input.json>`)
