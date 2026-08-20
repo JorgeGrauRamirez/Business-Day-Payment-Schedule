@@ -123,8 +123,9 @@ def test_adjust_unknown_convention_raises():
 
 
 def test_parse_frequency_months():
-    assert parse_frequency("1M") == 1
-    assert parse_frequency("6M") == 6
+    assert parse_frequency("1M") == 1 # monthly
+    assert parse_frequency("3M") == 3 #quarterly
+    assert parse_frequency("6M") == 6 # half yearly
 
 
 def test_parse_frequency_years_converted_to_months():
